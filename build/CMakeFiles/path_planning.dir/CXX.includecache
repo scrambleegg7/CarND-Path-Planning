@@ -1,0 +1,38 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/donchan/Documents/UdaCity/MyProject/CarND-Path-Planning-Project/src/map.cpp
+map.h
+/Users/donchan/Documents/UdaCity/MyProject/CarND-Path-Planning-Project/src/map.h
+
+/Users/donchan/Documents/UdaCity/MyProject/CarND-Path-Planning-Project/src/map.h
+string
+-
+vector
+-
+fstream
+-
+iostream
+-
+sstream
+-
+math.h
+-
+spline.h
+/Users/donchan/Documents/UdaCity/MyProject/CarND-Path-Planning-Project/src/spline.h
+
+/Users/donchan/Documents/UdaCity/MyProject/CarND-Path-Planning-Project/src/spline.h
+cstdio
+-
+cassert
+-
+vector
+-
+algorithm
+-
+

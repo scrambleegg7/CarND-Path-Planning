@@ -1,6 +1,65 @@
 # CarND-Path-Planning-Project
 Self-Driving Car Engineer Nanodegree Program
-   
+
+# Solution
+
+
+## 1. Map(Waypoints)
+I have provided Map Class to keep all waypoints of highway road, so that interpolation method can be easily to calculate smoothing points 
+for incoming s and d value from main routine.
+
+## 2. Build Traject
+I have created 2 (x,y) coordinates for car from incoming car x y coordinates and 3 interpolated values from car s d, which is extened to 
+30m 60m 90m length from original s points respectively. x y s d are retieved with telemetory API and saved as local member values 
+every time simulation working to view the driving car.
+
+Finally, I wrote the following codes to transform global coordinates to local coordinates for predicting further road path. 
+These lines are exactly same as I used to calculate local coordination of MPC project.
+
+```python
+// Making coordinates to local car coordinates.
+for ( int i = 0; i < ptsx.size(); i++ ) {
+  double shift_x = ptsx[i] - ref_x;
+  double shift_y = ptsy[i] - ref_y;
+
+  ptsx[i] = shift_x * cos(0 - ref_yaw) - shift_y * sin(0 - ref_yaw);
+  ptsy[i] = shift_x * sin(0 - ref_yaw) + shift_y * cos(0 - ref_yaw);
+}
+```
+__FROM MPC PROJECT__
+```python
+// Transform method the points to the vehicle's orientation
+// convert Global position to local position
+for (unsigned int i = 0; i < ptsx.size(); i++) {
+  double x = ptsx[i] - px;
+  double y = ptsy[i] - py;
+  ptsx_car[i] = x * cos(-psi) - y * sin(-psi);
+  ptsy_car[i] = x * sin(-psi) + y * cos(-psi);
+}
+```
+
+*1 Trajectory 
+Algorythm starts to generate further 50 local points based on the above local coordinates which are generated with waypoints interpolation.
+Every 50 next points, it refers to interpolated y postion 30m ahead and calculate right target distance. 
+Finally, it generates local coordinates to save next_value for passing next session of the car simulator interface.  
+
+```
+// Calculate distance y position on 30 m ahead.
+double target_x = 30.0;
+double target_y = s(target_x);
+double target_dist = sqrt(target_x*target_x + target_y*target_y);
+
+```
+
+
+## 3. Behavior
+In a basic sense of project rubic requirements, a car needs to change lane when detecting other driving car ahead.
+The distance how far other car drving from mine is depends on road / weather conditions, but we need to setup this distance  
+minimim 30m in order to escape unexpected collisions with other cars.
+Also, logic of behavior is searching car driving on left or right lane to measure how distance is far from my current driving coordinates.
+Once other cars are approaching (close) to my coordinate position, algorythm set the flag so that following logic set orders to keep lane for a while.
+ 
+
 ### Simulator.
 You can download the Term3 Simulator which contains the Path Planning Project from the [releases tab (https://github.com/udacity/self-driving-car-sim/releases/tag/T3_v1.2).
 

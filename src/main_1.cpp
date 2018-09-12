@@ -10,7 +10,6 @@
 
 #include <iostream>
 #include "map.h"
-#include "vehicle.h"
 #include "json.hpp"
 #include "spline.h"
 
@@ -159,19 +158,16 @@ int main() {
 
   // Map & Road & Vehicle & traject instances
   Map map (map_file_);
-  Behavior be;
 
   // Car's lane. Starting at middle lane.
   int lane = 1;
 
-  // Record EventId with Simulator to understand how many times called
-  int event_counter = 0;
   // Reference velocity.
   double ref_vel = 0.0; // mph
 
   //h.onMessage([&ref_vel, &lane, &map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy]
   //  (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
-  h.onMessage([&ref_vel, &lane, &map, &event_counter]
+  h.onMessage([&ref_vel, &lane, &map]
     (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
 
 
@@ -219,10 +215,6 @@ int main() {
               car_s = end_path_s;
             }
 
-            event_counter += 1;
-
-            Vehicle myCar();
-
             // Prediction : Analysing other cars positions.
             bool car_ahead = false;
             bool car_left = false;
@@ -257,7 +249,7 @@ int main() {
                   car_left |= car_s - 30 < check_car_s && car_s + 30 > check_car_s;
                 } else if ( car_lane - lane == 1 ) {
                   // Car right
-                  1 |= car_s - 30 < check_car_s && car_s + 30 > check_car_s;
+                  car_righ |= car_s - 30 < check_car_s && car_s + 30 > check_car_s;
                 }
             }
 
