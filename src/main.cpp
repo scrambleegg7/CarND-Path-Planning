@@ -13,6 +13,7 @@
 #include "vehicle.h"
 #include "json.hpp"
 #include "spline.h"
+#include "Behaviour.h"
 
 using namespace std;
 
@@ -39,102 +40,7 @@ string hasData(string s) {
   return "";
 }
 
-double distance(double x1, double y1, double x2, double y2)
-{
-	return sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
-}
-int ClosestWaypoint(double x, double y, const vector<double> &maps_x, const vector<double> &maps_y)
-{
 
-	double closestLen = 100000; //large number
-	int closestWaypoint = 0;
-
-	for(int i = 0; i < maps_x.size(); i++)
-	{
-		double map_x = maps_x[i];
-		double map_y = maps_y[i];
-		double dist = distance(x,y,map_x,map_y);
-		if(dist < closestLen)
-		{
-			closestLen = dist;
-			closestWaypoint = i;
-		}
-
-	}
-
-	return closestWaypoint;
-
-}
-
-int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x, const vector<double> &maps_y)
-{
-
-	int closestWaypoint = ClosestWaypoint(x,y,maps_x,maps_y);
-
-	double map_x = maps_x[closestWaypoint];
-	double map_y = maps_y[closestWaypoint];
-
-	double heading = atan2( (map_y-y),(map_x-x) );
-
-	double angle = abs(theta-heading);
-
-	if(angle > pi()/4)
-	{
-		closestWaypoint++;
-	}
-
-	return closestWaypoint;
-
-}
-
-// Transform from Cartesian x,y coordinates to Frenet s,d coordinates
-vector<double> getFrenet(double x, double y, double theta, const vector<double> &maps_x, const vector<double> &maps_y)
-{
-	int next_wp = NextWaypoint(x,y, theta, maps_x,maps_y);
-
-	int prev_wp;
-	prev_wp = next_wp-1;
-	if(next_wp == 0)
-	{
-		prev_wp  = maps_x.size()-1;
-	}
-
-	double n_x = maps_x[next_wp]-maps_x[prev_wp];
-	double n_y = maps_y[next_wp]-maps_y[prev_wp];
-	double x_x = x - maps_x[prev_wp];
-	double x_y = y - maps_y[prev_wp];
-
-	// find the projection of x onto n
-	double proj_norm = (x_x*n_x+x_y*n_y)/(n_x*n_x+n_y*n_y);
-	double proj_x = proj_norm*n_x;
-	double proj_y = proj_norm*n_y;
-
-	double frenet_d = distance(x_x,x_y,proj_x,proj_y);
-
-	//see if d value is positive or negative by comparing it to a center point
-
-	double center_x = 1000-maps_x[prev_wp];
-	double center_y = 2000-maps_y[prev_wp];
-	double centerToPos = distance(center_x,center_y,x_x,x_y);
-	double centerToRef = distance(center_x,center_y,proj_x,proj_y);
-
-	if(centerToPos <= centerToRef)
-	{
-		frenet_d *= -1;
-	}
-
-	// calculate s value
-	double frenet_s = 0;
-	for(int i = 0; i < prev_wp; i++)
-	{
-		frenet_s += distance(maps_x[i],maps_y[i],maps_x[i+1],maps_y[i+1]);
-	}
-
-	frenet_s += distance(0,0,proj_x,proj_y);
-
-	return {frenet_s,frenet_d};
-
-}
 
 int main() {
   uWS::Hub h;
@@ -155,11 +61,12 @@ int main() {
   // Waypoint map to read from
   string map_file_ = "../data/highway_map.csv";
   // The max s value before wrapping around the track back to 0
-  double max_s = 6945.554;
+  //double max_s = 6945.554;
 
   // Map & Road & Vehicle & traject instances
   Map map (map_file_);
-  Behavior be;
+  Vehicle myCar;
+  Behariour behaivour;
 
   // Car's lane. Starting at middle lane.
   int lane = 1;
@@ -167,11 +74,11 @@ int main() {
   // Record EventId with Simulator to understand how many times called
   int event_counter = 0;
   // Reference velocity.
-  double ref_vel = 0.0; // mph
+  double REF_VEL = 0.0; // mph
 
-  //h.onMessage([&ref_vel, &lane, &map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy]
+  //h.onMessage([&REF_VEL, &lane, &map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy]
   //  (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
-  h.onMessage([&ref_vel, &lane, &map, &event_counter]
+  h.onMessage([&REF_VEL, &lane, &map, &event_counter, &myCar, &behaivour]
     (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
 
 
@@ -221,70 +128,17 @@ int main() {
 
             event_counter += 1;
 
-            Vehicle myCar();
+            // myCar setup
+            myCar.setEventId(event_counter);
+            myCar.update_vehicle_values(car_x,car_y,car_speed,car_s,car_d,car_yaw);
+            myCar.set_previous_x(previous_path_x);
+            myCar.set_previous_y(previous_path_y);
 
-            // Prediction : Analysing other cars positions.
-            bool car_ahead = false;
-            bool car_left = false;
-            bool car_righ = false;
-            for ( int i = 0; i < sensor_fusion.size(); i++ ) {
-                float d = sensor_fusion[i][6];
-                int car_lane = -1;
-                // is it on the same lane we are
-                if ( d > 0 && d < 4 ) {
-                  car_lane = 0;
-                } else if ( d > 4 && d < 8 ) {
-                  car_lane = 1;
-                } else if ( d > 8 && d < 12 ) {
-                  car_lane = 2;
-                }
-                if (car_lane < 0) {
-                  continue;
-                }
-                // Find car speed.
-                double vx = sensor_fusion[i][3];
-                double vy = sensor_fusion[i][4];
-                double check_speed = sqrt(vx*vx + vy*vy);
-                double check_car_s = sensor_fusion[i][5];
-                // Estimate car s position after executing previous trajectory.
-                check_car_s += ((double)prev_size*0.02*check_speed);
-
-                if ( car_lane == lane ) {
-                  // Car in our lane.
-                  car_ahead |= check_car_s > car_s && check_car_s - car_s < 30;
-                } else if ( car_lane - lane == -1 ) {
-                  // Car left
-                  car_left |= car_s - 30 < check_car_s && car_s + 30 > check_car_s;
-                } else if ( car_lane - lane == 1 ) {
-                  // Car right
-                  1 |= car_s - 30 < check_car_s && car_s + 30 > check_car_s;
-                }
-            }
-
+            // approach to solve best lane and speed_difference of accelaration            
+            behaivour.setup(sensor_fusion, myCar, REF_VEL);
+            lane = behaivour.getlane();
             // Behavior : Let's see what to do.
-            double speed_diff = 0;
-            const double MAX_SPEED = 49.5;
-            const double MAX_ACC = .224;
-            if ( car_ahead ) { // Car ahead
-              if ( !car_left && lane > 0 ) {
-                // if there is no car left and there is a left lane.
-                lane--; // Change lane left.
-              } else if ( !car_righ && lane != 2 ){
-                // if there is no car right and there is a right lane.
-                lane++; // Change lane right.
-              } else {
-                speed_diff -= MAX_ACC;
-              }
-            } else {
-              if ( lane != 1 ) { // if we are not on the center lane.
-                if ( ( lane == 0 && !car_righ ) || ( lane == 2 && !car_left ) ) {
-                  lane = 1; // Back to center.
-                }
-              }
-              if ( ref_vel < MAX_SPEED ) {
-                speed_diff += MAX_ACC;
-              }
-            }
+            double speed_diff = behaivour.get_speed_diff();
 
           	vector<double> ptsx;
             vector<double> ptsy;
@@ -320,15 +174,11 @@ int main() {
                 ptsy.push_back(ref_y);
             }
 
+            // use interpolate value from spline function with car_s + 30m 60m 90m
             vector<double> next_wp0 = map.getXY(car_s + 30, 2 + 4*lane);
             vector<double> next_wp1 = map.getXY(car_s + 60, 2 + 4*lane);
             vector<double> next_wp2 = map.getXY(car_s + 90, 2 + 4*lane);
             
-            // Setting up target points in the future.
-            //vector<double> next_wp0 = getXY(car_s + 30, 2 + 4*lane, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-            //vector<double> next_wp1 = getXY(car_s + 60, 2 + 4*lane, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-            //vector<double> next_wp2 = getXY(car_s + 90, 2 + 4*lane, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-
             ptsx.push_back(next_wp0[0]);
             ptsx.push_back(next_wp1[0]);
             ptsx.push_back(next_wp2[0]);
@@ -365,14 +215,15 @@ int main() {
 
             double x_add_on = 0;
 
+
             for( int i = 1; i < 50 - prev_size; i++ ) {
-              ref_vel += speed_diff;
-              if ( ref_vel > MAX_SPEED ) {
-                ref_vel = MAX_SPEED;
-              } else if ( ref_vel < MAX_ACC ) {
-                ref_vel = MAX_ACC;
+              REF_VEL += speed_diff;
+              if ( REF_VEL > PARAM_MAX_SPEED_MPH ) {
+                REF_VEL = PARAM_MAX_SPEED_MPH;
+              } else if ( REF_VEL < MAX_ACC ) {
+                REF_VEL = MAX_ACC;
               }
-              double N = target_dist/(0.02*ref_vel/2.24);
+              double N = target_dist/(0.02*REF_VEL/2.24);
               double x_point = x_add_on + target_x/N;
               double y_point = s(x_point);
 

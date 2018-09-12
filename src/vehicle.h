@@ -32,6 +32,10 @@ class Vehicle {
     vector<double> previous_s;
     vector<double> previous_d;
 
+    vector<double> previous_path_x;
+    vector<double> previous_path_y;
+    
+
   public:
 
     Vehicle();
@@ -53,10 +57,19 @@ class Vehicle {
     
 
     void update_vehicle_values(double x, double y, double v, double s, double d, double yaw);
+
     void set_previous_s(vector<double> previous_s);
     void set_previous_d(vector<double> previous_d);
+
     vector<double> prev_s();
     vector<double> prev_d();
+
+    void set_previous_x(vector<double> px) {previous_path_x = px;}
+    void set_previous_y(vector<double> py) {previous_path_y = py;}
+
+    vector<double> prev_x() {return previous_path_x;}
+    vector<double> prev_y() {return previous_path_y;}
+
 
     friend ostream& operator << (ostream& ostr, Vehicle &v);
 

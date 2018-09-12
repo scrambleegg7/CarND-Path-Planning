@@ -26,8 +26,7 @@ const double PARAM_MAX_SPEED_MPH = 49;
 const double PARAM_MAX_SPEED = 22; // m.s-1
 const double PARAM_MAX_ACCEL = 10; // m.s-2
 const double PARAM_MAX_JERK  = 10; // m.s-3 average jerk over 1 second
-
-
+const double MAX_ACC = .224;
 
 enum class LANE { LEFT, CENTER, RIGHT };
 enum class STATE { START, KEEP_LANE, CHANGE_LEFT, CHANGE_RIGHT };

@@ -9,6 +9,7 @@ I have provided Map Class to keep all waypoints of highway road, so that interpo
 for incoming s and d value from main routine.
 
 ## 2. Build Traject
+
 I have created 2 (x,y) coordinates for car from incoming car x y coordinates and 3 interpolated values from car s d, which is extened to 
 30m 60m 90m length from original s points respectively. x y s d are retieved with telemetory API and saved as local member values 
 every time simulation working to view the driving car.
@@ -38,7 +39,7 @@ for (unsigned int i = 0; i < ptsx.size(); i++) {
 }
 ```
 
-*1 Trajectory 
+* __Trajectory__ 
 Algorythm starts to generate further 50 local points based on the above local coordinates which are generated with waypoints interpolation.
 Every 50 next points, it refers to interpolated y postion 30m ahead and calculate right target distance. 
 Finally, it generates local coordinates to save next_value for passing next session of the car simulator interface.  
@@ -50,7 +51,6 @@ double target_y = s(target_x);
 double target_dist = sqrt(target_x*target_x + target_y*target_y);
 
 ```
-
 
 ## 3. Behavior
 In a basic sense of project rubic requirements, a car needs to change lane when detecting other driving car ahead.
